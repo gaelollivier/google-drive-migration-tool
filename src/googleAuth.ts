@@ -1,6 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { Auth, drive_v3 } from 'googleapis';
-import { rawListeners } from 'process';
+import { Auth } from 'googleapis';
 import readline from 'readline';
 
 const CREDENTIALS_PATH = './data/google-credentials.json';
@@ -12,14 +11,14 @@ const SCOPES = ['https://www.googleapis.com/auth/drive'];
 // time.
 const TOKEN_PATH = './data/google-token.json';
 
-(async () => {
+export const getAuth2Client = async () => {
   // Load client secrets from a local file.
   const credentials = readFileSync(CREDENTIALS_PATH, 'utf-8');
   // Authorize a client with credentials, then call the Google Drive API.
   const oAuth2Client = await authorize(JSON.parse(credentials));
 
-  listFiles(oAuth2Client);
-})();
+  return oAuth2Client;
+};
 
 /**
  * Create an OAuth2 client with the given credentials, and then execute the
@@ -72,33 +71,12 @@ async function getAccessToken(oAuth2Client: Auth.OAuth2Client) {
   console.log('Authorize this app by visiting this url:', authUrl);
 
   const code = await readlineQuestion('Enter the code from that page here: ');
-  const { tokens } = await oAuth2Client.getToken(code);
+  const res = await oAuth2Client.getToken(code);
+  const { tokens } = res;
 
   // Store the token to disk for later program executions
   writeFileSync(TOKEN_PATH, JSON.stringify(tokens));
   console.log('Token stored to', TOKEN_PATH);
 
   return tokens;
-}
-
-/**
- * Lists the names and IDs of up to 10 files.
- * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
- */
-async function listFiles(auth: Auth.OAuth2Client) {
-  const drive = new drive_v3.Drive({ auth });
-  const res = await drive.files.list({
-    pageSize: 10,
-    fields: 'nextPageToken, files(id, name)',
-  });
-
-  const files = res.data.files ?? [];
-  if (files.length) {
-    console.log('Files:');
-    files.map((file) => {
-      console.log(`${file.name} (${file.id})`);
-    });
-  } else {
-    console.log('No files found.');
-  }
 }
