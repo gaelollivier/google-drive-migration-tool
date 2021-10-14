@@ -1,17 +1,25 @@
-import { createWriteStream, writeFileSync } from 'fs';
 import { Auth, drive_v3 } from 'googleapis';
 import { Readable } from 'stream';
 
 import { getAuth2Client } from './googleAuth';
 
-/**
- * Lists the names and IDs of up to 10 files.
- * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
- */
-async function getFile(auth: Auth.OAuth2Client): Promise<Readable> {
+function escapeName(name: string) {
+  return name.replace(/\//g, '\\/');
+}
+
+export async function getDriveClient() {
+  const auth = await getAuth2Client();
   const drive = new drive_v3.Drive({ auth });
+  return drive;
+}
+
+export async function getLargestFiles({
+  drive,
+}: {
+  drive: drive_v3.Drive;
+}): Promise<Array<drive_v3.Schema$File>> {
   const res = await drive.files.list({
-    pageSize: 100,
+    pageSize: 10,
     fields: 'nextPageToken, files(id, name, quotaBytesUsed, parents)',
     orderBy: 'quotaBytesUsed desc',
   });
@@ -21,23 +29,44 @@ async function getFile(auth: Auth.OAuth2Client): Promise<Readable> {
     throw new Error('No files found');
   }
 
-  const last = files[files.length - 1];
-  console.log(last);
+  return files;
+}
 
+export async function getFilePath({
+  drive,
+  file: { name, parents },
+}: {
+  drive: drive_v3.Drive;
+  file: drive_v3.Schema$File;
+}): Promise<string> {
+  const parent = parents?.[0];
+  if (!parent) {
+    return escapeName(name ?? '');
+  }
+
+  const parentFolder = await drive.files.get({
+    fileId: parent,
+    fields: 'id, name, parents',
+  });
+  return `${await getFilePath({ drive, file: parentFolder.data })}/${escapeName(
+    name ?? ''
+  )}`;
+}
+
+export async function getFileStream({
+  drive,
+  file,
+}: {
+  drive: drive_v3.Drive;
+  file: drive_v3.Schema$File;
+}): Promise<Readable> {
   const fileStream = await drive.files.get(
-    {
-      fileId: last?.id ?? '',
-      alt: 'media',
-    },
+    { fileId: file.id ?? '', alt: 'media' },
     { responseType: 'stream' }
   );
 
-  if (!fileStream) {
-    throw new Error('fileStream is null');
-  }
-
   let downloaded = 0;
-  const fileSize = Number(last?.quotaBytesUsed) || 0;
+  const fileSize = Number(file.quotaBytesUsed) || 0;
 
   fileStream.data
     .on('data', (data) => {
@@ -50,23 +79,11 @@ async function getFile(auth: Auth.OAuth2Client): Promise<Readable> {
       }
     })
     .on('end', function () {
-      console.log('Done');
+      console.log('Download done');
     })
     .on('error', function (err) {
       console.log('Error during download', err);
     });
 
   return fileStream.data;
-}
-
-export async function getFileStream() {
-  const auth = await getAuth2Client();
-  return getFile(auth);
-}
-
-if (module === require.main) {
-  (async () => {
-    const auth = await getAuth2Client();
-    getFile(auth);
-  })();
 }

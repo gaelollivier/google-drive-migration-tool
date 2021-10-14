@@ -5,18 +5,19 @@ import { PassThrough, Readable } from 'stream';
 import { getFileStream } from './googleDownload';
 
 const s3 = new AWS.S3({
-  region: 'fr-par',
-  endpoint: 'https://gael-ollivier-backup.s3.fr-par.scw.cloud',
+  endpoint: process.env['S3_ENDPOINT'],
   s3BucketEndpoint: true,
 });
 
 // Setup access key
 s3.config.update({
-  accessKeyId: process.env['AWS_ACCESS_KEY'],
-  secretAccessKey: process.env['AWS_SECRET_KEY'],
+  accessKeyId: process.env['S3_ACCESS_KEY'],
+  secretAccessKey: process.env['S3_SECRET_KEY'],
 });
 
-const SCALEWAY_OBJECTS_CACHE = 'scaleway-objects.json';
+const Bucket = process.env['S3_BUCKET'] ?? '';
+
+const S3_OBJECTS_CACHE = 's3-objects.json';
 
 const listAllObjects = async () => {
   let allObjects: AWS.S3.ObjectList = [];
@@ -38,11 +39,11 @@ const listAllObjects = async () => {
     }
   }
 
-  if (existsSync(SCALEWAY_OBJECTS_CACHE)) {
-    allObjects = JSON.parse(readFileSync(SCALEWAY_OBJECTS_CACHE, 'utf8'));
+  if (existsSync(S3_OBJECTS_CACHE)) {
+    allObjects = JSON.parse(readFileSync(S3_OBJECTS_CACHE, 'utf8'));
   } else {
     await fetchAllObjects();
-    writeFileSync(SCALEWAY_OBJECTS_CACHE, JSON.stringify(allObjects, null, 2));
+    writeFileSync(S3_OBJECTS_CACHE, JSON.stringify(allObjects, null, 2));
   }
 
   const totalSize = allObjects.reduce((acc, { Size }) => acc + (Size ?? 0), 0);
@@ -53,13 +54,13 @@ const listAllObjects = async () => {
   );
 };
 
-const uploadObject = () => {
+const uploadObject = ({ filename }: { filename: string }) => {
   const Body = new PassThrough();
 
-  console.log('Start uploading');
+  console.log('Uploading', filename);
   const upload = s3.upload({
-    Bucket: 'gael-ollivier-backup',
-    Key: 'test-upload.mp4',
+    Bucket: process.env['S3_BUCKET'] ?? '',
+    Key: `Test/${filename}`,
     Body,
     StorageClass: 'GLACIER',
   });
@@ -78,7 +79,11 @@ const uploadObject = () => {
 
 if (require.main === module) {
   (async () => {
-    const stream = await getFileStream();
-    stream.pipe(uploadObject());
+    // const stream = await getFileStream();
+    // stream.pipe(uploadObject());
+    // const res = await s3
+    //   .deleteObject({ Bucket, Key: 'Drive Backup' })
+    //   .promise();
+    // console.log(res);
   })();
 }
