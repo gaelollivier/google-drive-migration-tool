@@ -5,6 +5,7 @@ import { PassThrough, Readable } from 'stream';
 import { getFileStream } from './googleDownload';
 
 const s3 = new AWS.S3({
+  region: process.env['S3_REGION'],
   endpoint: process.env['S3_ENDPOINT'],
   s3BucketEndpoint: true,
 });
@@ -16,8 +17,6 @@ s3.config.update({
 });
 
 const Bucket = process.env['S3_BUCKET'] ?? '';
-
-const S3_OBJECTS_CACHE = 's3-objects.json';
 
 const listAllObjects = async () => {
   let allObjects: AWS.S3.ObjectList = [];
@@ -39,12 +38,7 @@ const listAllObjects = async () => {
     }
   }
 
-  if (existsSync(S3_OBJECTS_CACHE)) {
-    allObjects = JSON.parse(readFileSync(S3_OBJECTS_CACHE, 'utf8'));
-  } else {
-    await fetchAllObjects();
-    writeFileSync(S3_OBJECTS_CACHE, JSON.stringify(allObjects, null, 2));
-  }
+  await fetchAllObjects();
 
   const totalSize = allObjects.reduce((acc, { Size }) => acc + (Size ?? 0), 0);
 
@@ -52,23 +46,31 @@ const listAllObjects = async () => {
   console.log(
     `Total size (GB): ${(totalSize / 1024 / 1024 / 1024).toFixed(2)}`
   );
+
+  return allObjects;
 };
 
-const uploadObject = ({ filename }: { filename: string }) => {
+export const uploadObject = ({
+  filename,
+  totalSize,
+}: {
+  filename: string;
+  totalSize: number;
+}) => {
   const Body = new PassThrough();
 
   console.log('Uploading', filename);
   const upload = s3.upload({
     Bucket: process.env['S3_BUCKET'] ?? '',
-    Key: `Test/${filename}`,
+    Key: filename,
     Body,
     StorageClass: 'GLACIER',
   });
 
   let prevPercent = 0;
   upload.on('httpUploadProgress', ({ loaded }) => {
-    // Log loaded in MB
-    console.log((loaded / 1024 / 1024).toFixed(2), 'MB');
+    const percent = Math.floor((loaded / totalSize) * 100);
+    console.log(`Uploaded ${percent}%`);
   });
   upload.send((err, data) => {
     console.log('Uploaded', data);
@@ -79,11 +81,13 @@ const uploadObject = ({ filename }: { filename: string }) => {
 
 if (require.main === module) {
   (async () => {
-    // const stream = await getFileStream();
-    // stream.pipe(uploadObject());
-    // const res = await s3
-    //   .deleteObject({ Bucket, Key: 'Drive Backup' })
-    //   .promise();
-    // console.log(res);
+    const allObjects = await listAllObjects();
+    const toDelete = allObjects.filter((file) =>
+      file.Key?.startsWith('Drive Backup')
+    );
+    console.log(toDelete);
+    // s3.deleteObject({ Bucket, Key: toDelete[0]?.Key ?? '' }, (err, data) => {
+    //   console.log(err, data);
+    // });
   })();
 }

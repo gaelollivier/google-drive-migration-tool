@@ -19,8 +19,9 @@ export async function getLargestFiles({
   drive: drive_v3.Drive;
 }): Promise<Array<drive_v3.Schema$File>> {
   const res = await drive.files.list({
-    pageSize: 10,
-    fields: 'nextPageToken, files(id, name, quotaBytesUsed, parents)',
+    pageSize: 1000,
+    fields:
+      'nextPageToken, files(id, name, quotaBytesUsed, parents, createdTime)',
     orderBy: 'quotaBytesUsed desc',
   });
 
@@ -87,3 +88,23 @@ export async function getFileStream({
 
   return fileStream.data;
 }
+
+// if (require.main === module) {
+//   (async () => {
+//     // List largest files size
+//     const drive = await getDriveClient();
+//     const files = await getLargestFiles({ drive });
+//     console.log(
+//       Number(files.slice(-1)[0]?.quotaBytesUsed) / 1024 / 1024 / 1024
+//     );
+//     const totalSize = files.reduce(
+//       (acc, file) => acc + (Number(file?.quotaBytesUsed) || 0),
+//       0
+//     );
+//     console.log(`Total size (GB): ${totalSize / 1024 / 1024 / 1024}`);
+//     const totalSize2 = files
+//       .filter((file) => Number(file.createdTime?.slice(0, 4)) < 2020)
+//       .reduce((acc, file) => acc + (Number(file.quotaBytesUsed) || 0), 0);
+//     console.log(`Total size (GB): ${totalSize2 / 1024 / 1024 / 1024}`);
+//   })();
+// }
