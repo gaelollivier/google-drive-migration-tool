@@ -59,7 +59,7 @@ export const uploadObject = ({
 }) => {
   const Body = new PassThrough();
 
-  console.log('Uploading', filename);
+  console.log(`Uploading "${filename}"`);
   const upload = s3.upload({
     Bucket: process.env['S3_BUCKET'] ?? '',
     Key: filename,
@@ -67,13 +67,26 @@ export const uploadObject = ({
     StorageClass: 'GLACIER',
   });
 
-  let prevPercent = 0;
+  let prevLoaded = { size: 0, time: Date.now() };
+  // Keep track of last 10 speeds to get a moving avg
+  let speeds: number[] = [];
   upload.on('httpUploadProgress', ({ loaded }) => {
+    const now = Date.now();
+    const deltaSize = loaded - prevLoaded.size;
+    const deltaTime = now - prevLoaded.time;
+    const speed = deltaSize / (deltaTime / 1000);
+    speeds = [speed, ...speeds.slice(0, 9)];
+    const avgSpeed =
+      speeds.reduce((acc, speed) => acc + speed, 0) / speeds.length;
+
     const percent = Math.floor((loaded / totalSize) * 100);
-    console.log(`Uploaded ${percent}%`);
+    console.log(
+      `Uploaded ${percent}%, ${(avgSpeed / 1024 / 1024).toFixed(1)}MB/s`
+    );
+    prevLoaded = { size: loaded, time: now };
   });
   upload.send((err, data) => {
-    console.log('Uploaded', data);
+    console.log('Uploaded', { err, data });
   });
 
   return Body;
