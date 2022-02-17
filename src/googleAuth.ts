@@ -3,14 +3,14 @@ import { Auth } from 'googleapis';
 import readline from 'readline';
 import { URL } from 'url';
 
-const CREDENTIALS_PATH = './data/google-credentials.json';
+const CREDENTIALS_PATH = '/app/data/google-credentials.json';
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
-const TOKEN_PATH = './data/google-token.json';
+const TOKEN_PATH = '/app/data/google-token.json';
 
 export const getAuth2Client = async () => {
   // Load client secrets from a local file.
@@ -40,6 +40,8 @@ async function authorize(credentials: any) {
     if (token.expiry_date > Date.now()) {
       oAuth2Client.setCredentials(token);
       return oAuth2Client;
+    } else {
+      console.log('Token expired');
     }
   }
 
