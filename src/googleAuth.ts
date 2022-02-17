@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { Auth } from 'googleapis';
 import readline from 'readline';
+import { URL } from 'url';
 
 const CREDENTIALS_PATH = './data/google-credentials.json';
 
@@ -36,8 +37,10 @@ async function authorize(credentials: any) {
   // Check if we have previously stored a token.
   if (existsSync(TOKEN_PATH)) {
     const token = JSON.parse(readFileSync(TOKEN_PATH, 'utf-8'));
-    oAuth2Client.setCredentials(token);
-    return oAuth2Client;
+    if (token.expiry_date > Date.now()) {
+      oAuth2Client.setCredentials(token);
+      return oAuth2Client;
+    }
   }
 
   const token = await getAccessToken(oAuth2Client);
@@ -70,7 +73,13 @@ async function getAccessToken(oAuth2Client: Auth.OAuth2Client) {
   });
   console.log('Authorize this app by visiting this url:', authUrl);
 
-  const code = await readlineQuestion('Enter the code from that page here: ');
+  const url = new URL(
+    await readlineQuestion(
+      'Enter the URL you are redirected to here (should contain a "?code=" param): '
+    )
+  );
+  const code = url.searchParams.get('code') ?? '';
+
   const res = await oAuth2Client.getToken(code);
   const { tokens } = res;
 

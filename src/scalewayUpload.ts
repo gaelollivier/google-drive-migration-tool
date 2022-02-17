@@ -1,8 +1,5 @@
 import AWS from 'aws-sdk';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { PassThrough, Readable } from 'stream';
-
-import { getFileStream } from './googleDownload';
+import { PassThrough } from 'stream';
 
 const s3 = new AWS.S3({
   region: process.env['S3_REGION'],
@@ -18,13 +15,26 @@ s3.config.update({
 
 const Bucket = process.env['S3_BUCKET'] ?? '';
 
+export const objectExists = async (filename: string) => {
+  try {
+    await s3.headObject({ Bucket, Key: filename }).promise();
+
+    return true;
+  } catch (err) {
+    if ((err as any).code === 'NotFound') {
+      return false;
+    }
+    throw err;
+  }
+};
+
 const listAllObjects = async () => {
   let allObjects: AWS.S3.ObjectList = [];
 
   async function fetchAllObjects(nextContinuationToken?: string) {
     const { Contents, ...res } = await s3
       .listObjectsV2({
-        Bucket: 'gael-ollivier-backup',
+        Bucket,
         ContinuationToken: nextContinuationToken,
       })
       .promise();
@@ -85,11 +95,18 @@ export const uploadObject = ({
     );
     prevLoaded = { size: loaded, time: now };
   });
-  upload.send((err, data) => {
-    console.log('Uploaded', { err, data });
-  });
 
-  return Body;
+  return {
+    uploadStream: Body,
+    promise: new Promise((resolve, reject) => {
+      upload.send((err, data) => {
+        if (err) {
+          reject(err);
+        }
+        resolve(data);
+      });
+    }),
+  };
 };
 
 if (require.main === module) {

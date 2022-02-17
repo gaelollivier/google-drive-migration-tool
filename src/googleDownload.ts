@@ -3,8 +3,11 @@ import { Readable } from 'stream';
 
 import { getAuth2Client } from './googleAuth';
 
-function escapeName(name: string) {
-  return name.replace(/\//g, '\\/');
+function validateName(name: string) {
+  if (name.includes('/')) {
+    throw new Error(`Invalid name: ${name}`);
+  }
+  return name;
 }
 
 export async function getDriveClient() {
@@ -42,16 +45,17 @@ export async function getFilePath({
 }): Promise<string> {
   const parent = parents?.[0];
   if (!parent) {
-    return escapeName(name ?? '');
+    return validateName(name ?? '');
   }
 
   const parentFolder = await drive.files.get({
     fileId: parent,
     fields: 'id, name, parents',
   });
-  return `${await getFilePath({ drive, file: parentFolder.data })}/${escapeName(
-    name ?? ''
-  )}`;
+  return `${await getFilePath({
+    drive,
+    file: parentFolder.data,
+  })}/${validateName(name ?? '')}`;
 }
 
 export async function getFileStream({
