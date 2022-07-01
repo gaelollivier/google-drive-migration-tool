@@ -5,11 +5,15 @@
   "license": "MIT",
   "dependencies": {
     "aws-sdk": "^2.1001.0",
-    "googleapis": "^88.2.0"
+    "googleapis": "^88.2.0",
+    "mongodb": "^4.7.0"
   },
   "devDependencies": {
     "@types/node": "^16.10.3",
     "ts-node": "^10.2.1",
     "typescript": "^4.4.3"
+  },
+  "scripts": {
+    "start": "ts-node -T ./src/index.ts"
   }
 }

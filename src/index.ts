@@ -1,28 +1,62 @@
-import {
-  getDriveClient,
-  getFilePath,
-  getFileStream,
-  getLargestFiles,
-} from './googleDownload';
-import { uploadObject } from './scalewayUpload';
+import { uploadDriveFileToScaleway } from './backupLargeFiles';
+import { runDbQuery } from './db';
+import { getDriveClient, getFilePath, getLargestFiles } from './googleDownload';
 
-if (module === require.main) {
-  (async () => {
-    const drive = await getDriveClient();
-    const files = await getLargestFiles({ drive });
+(async () => {
+  console.log('Test script: backing up a large file...');
 
-    const file = files.slice(-1)[0];
-    if (!file) {
-      throw new Error('No file found');
+  const drive = await getDriveClient();
+
+  // Get largest files
+  console.log('Listing largest files');
+  const files = await getLargestFiles({ drive });
+
+  // TO REMOVE ! TESTING ONLY
+  const filteredFiles = files.reverse();
+
+  console.log(
+    'TOTAL FILES SIZE:',
+    filteredFiles.reduce((sum, file) => sum + Number(file.quotaBytesUsed), 0) /
+      1024 /
+      1024 /
+      1024,
+    'GB'
+  );
+
+  for (const [index, file] of filteredFiles.entries()) {
+    console.log(`Migrating file ${index + 1}/${filteredFiles.length}`);
+    console.log(file);
+
+    const existingFile = await runDbQuery(async (db) => {
+      return await db.collection('files').findOne({ 'file.id': file.id });
+    });
+
+    if (existingFile && existingFile['status'] === 'uploaded') {
+      console.log('File already uploaded');
+      continue;
     }
 
     const filePath = await getFilePath({ drive, file });
-    const fileStream = await getFileStream({ drive, file });
 
-    const uploadStream = uploadObject({
-      filename: `Drive Backup/${filePath}`,
-      totalSize: Number(file.quotaBytesUsed),
+    await runDbQuery(async (db) => {
+      await db
+        .collection('files')
+        .findOneAndUpdate(
+          { 'file.id': file.id },
+          { $set: { file, filePath, status: 'uploading' } },
+          { upsert: true }
+        );
     });
-    fileStream.pipe(uploadStream);
-  })();
-}
+
+    await uploadDriveFileToScaleway({ drive, file });
+
+    await runDbQuery(async (db) => {
+      await db
+        .collection('files')
+        .findOneAndUpdate(
+          { 'file.id': file.id },
+          { $set: { status: 'uploaded' } }
+        );
+    });
+  }
+})();

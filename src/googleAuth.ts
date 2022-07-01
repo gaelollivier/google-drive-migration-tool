@@ -85,6 +85,8 @@ async function getAccessToken(oAuth2Client: Auth.OAuth2Client) {
   const res = await oAuth2Client.getToken(code);
   const { tokens } = res;
 
+  console.log('Got token:\n', JSON.stringify(tokens));
+
   // Store the token to disk for later program executions
   writeFileSync(TOKEN_PATH, JSON.stringify(tokens));
   console.log('Token stored to', TOKEN_PATH);

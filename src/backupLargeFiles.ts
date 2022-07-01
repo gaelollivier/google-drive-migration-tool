@@ -8,7 +8,7 @@ import {
 } from './googleDownload';
 import { objectExists, uploadObject } from './scalewayUpload';
 
-async function uploadDriveFileToScaleway({
+export async function uploadDriveFileToScaleway({
   drive,
   file,
 }: {
@@ -37,21 +37,4 @@ async function uploadDriveFileToScaleway({
 
   const res = await promise;
   console.log({ res });
-}
-
-if (module === require.main) {
-  (async () => {
-    console.log('Test script: backing up a large file...');
-
-    const drive = await getDriveClient();
-
-    // Get largest files
-    console.log('Listing largest files');
-    const files = await getLargestFiles({ drive });
-
-    for (const [index, file] of files.entries()) {
-      console.log(`Transfering file ${index + 1}/${files.length}`);
-      await uploadDriveFileToScaleway({ drive, file });
-    }
-  })();
 }

@@ -26,6 +26,8 @@ export async function getLargestFiles({
     fields:
       'nextPageToken, files(id, name, quotaBytesUsed, parents, createdTime)',
     orderBy: 'quotaBytesUsed desc',
+    // Exclude files modified after 2016, so we only move old files
+    q: "modifiedTime < '2018-01-01T12:00:00'",
   });
 
   const files = res.data.files ?? [];
