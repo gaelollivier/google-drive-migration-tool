@@ -11,8 +11,8 @@ import { getDriveClient, getFilePath, getLargestFiles } from './googleDownload';
   console.log('Listing largest files');
   const files = await getLargestFiles({ drive });
 
-  // TO REMOVE ! TESTING ONLY
-  const filteredFiles = files.reverse();
+  // NOTE: Not used at the moment but can be used for testing
+  const filteredFiles = files;
 
   console.log(
     'TOTAL FILES SIZE:',
