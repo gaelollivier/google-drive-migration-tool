@@ -35,7 +35,10 @@ async function authorize(credentials: any) {
   );
 
   // Check if we have previously stored a token.
-  if (existsSync(TOKEN_PATH)) {
+  if (
+    existsSync(TOKEN_PATH) &&
+    readFileSync(TOKEN_PATH, 'utf-8').trim().length
+  ) {
     const token = JSON.parse(readFileSync(TOKEN_PATH, 'utf-8'));
     if (token.expiry_date > Date.now()) {
       oAuth2Client.setCredentials(token);

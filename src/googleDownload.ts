@@ -1,4 +1,4 @@
-import { Auth, drive_v3 } from 'googleapis';
+import { drive_v3 } from 'googleapis';
 import { Readable } from 'stream';
 
 import { getAuth2Client } from './googleAuth';

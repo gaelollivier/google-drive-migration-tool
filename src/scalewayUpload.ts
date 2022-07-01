@@ -60,6 +60,11 @@ const listAllObjects = async () => {
   return allObjects;
 };
 
+// Force the total number of parts to be 500
+// NOTE: Scaleway limits the total number of parts to 1000
+const MAX_PARTS_COUNT = 500;
+const MIN_CHUNK_SIZE = 1024 * 1024;
+
 export const uploadObject = ({
   filename,
   totalSize,
@@ -71,7 +76,15 @@ export const uploadObject = ({
 }) => {
   const Body = new PassThrough();
 
-  console.log(logPrefix, `Uploading "${filename}"`);
+  const partSize = Math.max(MIN_CHUNK_SIZE, totalSize / MAX_PARTS_COUNT);
+
+  console.log(
+    logPrefix,
+    `Uploading "${filename}" in ${Math.round(
+      totalSize / partSize
+    )} parts of ${Math.round(partSize / 1024 / 1024)} MB`
+  );
+
   const upload = s3.upload(
     {
       Bucket: process.env['S3_BUCKET'] ?? '',
@@ -79,11 +92,7 @@ export const uploadObject = ({
       Body,
       StorageClass: 'GLACIER',
     },
-    {
-      // Force the total number of parts to be 100
-      // NOTE: Scaleway limits the total number of parts to 1000
-      partSize: totalSize / 100,
-    }
+    { partSize }
   );
 
   let prevLoaded = { size: 0, time: Date.now() };
