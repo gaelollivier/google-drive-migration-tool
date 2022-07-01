@@ -16,18 +16,23 @@ import { getDriveClient, getFilePath, getLargestFiles } from './googleDownload';
 
   console.log(
     'TOTAL FILES SIZE:',
-    filteredFiles.reduce((sum, file) => sum + Number(file.quotaBytesUsed), 0) /
-      1024 /
-      1024 /
-      1024,
+    Math.round(
+      filteredFiles.reduce(
+        (sum, file) => sum + Number(file.quotaBytesUsed),
+        0
+      ) /
+        1024 /
+        1024 /
+        1024
+    ),
     'GB'
   );
 
   for (const [index, file] of filteredFiles.entries()) {
     console.log(
-      `Migrating file ${index + 1}/${filteredFiles.length}, size: ${
+      `Migrating file ${index + 1}/${filteredFiles.length}, size: ${Math.round(
         Number(file.quotaBytesUsed) / 1024 / 1024 / 1024
-      } GB`
+      )} GB`
     );
     console.log(file);
 
@@ -52,7 +57,11 @@ import { getDriveClient, getFilePath, getLargestFiles } from './googleDownload';
         );
     });
 
-    await uploadDriveFileToScaleway({ drive, file });
+    await uploadDriveFileToScaleway({
+      drive,
+      file,
+      logPrefix: `${index + 1}/${filteredFiles.length}`,
+    });
 
     await runDbQuery(async (db) => {
       await db

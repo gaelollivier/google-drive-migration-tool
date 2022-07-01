@@ -63,13 +63,15 @@ const listAllObjects = async () => {
 export const uploadObject = ({
   filename,
   totalSize,
+  logPrefix,
 }: {
   filename: string;
   totalSize: number;
+  logPrefix: string;
 }) => {
   const Body = new PassThrough();
 
-  console.log(`Uploading "${filename}"`);
+  console.log(logPrefix, `Uploading "${filename}"`);
   const upload = s3.upload({
     Bucket: process.env['S3_BUCKET'] ?? '',
     Key: filename,
@@ -91,6 +93,7 @@ export const uploadObject = ({
 
     const percent = Math.floor((loaded / totalSize) * 100);
     console.log(
+      logPrefix,
       `Uploaded ${percent}%, ${(avgSpeed / 1024 / 1024).toFixed(1)}MB/s`
     );
     prevLoaded = { size: loaded, time: now };
