@@ -24,7 +24,11 @@ import { getDriveClient, getFilePath, getLargestFiles } from './googleDownload';
   );
 
   for (const [index, file] of filteredFiles.entries()) {
-    console.log(`Migrating file ${index + 1}/${filteredFiles.length}`);
+    console.log(
+      `Migrating file ${index + 1}/${filteredFiles.length}, size: ${
+        Number(file.quotaBytesUsed) / 1024 / 1024 / 1024
+      } GB`
+    );
     console.log(file);
 
     const existingFile = await runDbQuery(async (db) => {
