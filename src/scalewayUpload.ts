@@ -72,12 +72,19 @@ export const uploadObject = ({
   const Body = new PassThrough();
 
   console.log(logPrefix, `Uploading "${filename}"`);
-  const upload = s3.upload({
-    Bucket: process.env['S3_BUCKET'] ?? '',
-    Key: filename,
-    Body,
-    StorageClass: 'GLACIER',
-  });
+  const upload = s3.upload(
+    {
+      Bucket: process.env['S3_BUCKET'] ?? '',
+      Key: filename,
+      Body,
+      StorageClass: 'GLACIER',
+    },
+    {
+      // Force the total number of parts to be 100
+      // NOTE: Scaleway limits the total number of parts to 1000
+      partSize: totalSize / 100,
+    }
+  );
 
   let prevLoaded = { size: 0, time: Date.now() };
   // Keep track of last 10 speeds to get a moving avg
