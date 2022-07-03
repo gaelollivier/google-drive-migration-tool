@@ -1,4 +1,4 @@
-import slack from '@slack/client';
+import { WebClient } from '@slack/client';
 
 import { uploadDriveFileToScaleway } from './backupLargeFiles';
 import { runDbQuery } from './db';
@@ -82,7 +82,7 @@ import { getDriveClient, getFilePath, getLargestFiles } from './googleDownload';
     const slackChannel = process.env['SLACK_CHANNEL'];
     if (slackWebhook && slackChannel) {
       console.log('Notifying Slack');
-      const web = new slack.WebClient(slackWebhook);
+      const web = new WebClient(slackWebhook);
       await web.chat.postMessage({
         channel: slackChannel,
         text: `File ${index + 1}/${
