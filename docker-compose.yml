@@ -4,6 +4,7 @@ services:
   # Usage: docker compose build migrate && docker compose run -it migrate
   migrate:
     build: .
+    restart: unless-stopped
     environment:
       - S3_ACCESS_KEY=$S3_ACCESS_KEY
       - S3_SECRET_KEY=$S3_SECRET_KEY
@@ -12,4 +13,13 @@ services:
       - S3_BUCKET=$S3_BUCKET
       - GOOGLE_CREDENTIALS=$GOOGLE_CREDENTIALS
       - GOOGLE_TOKEN=$GOOGLE_TOKEN
+      - MONGO_URL=$MONGO_URL
+
+  auth:
+    build: .
+    command: --auth
+    ports:
+      - '3000:3000'
+    environment:
+      - GOOGLE_CREDENTIALS=$GOOGLE_CREDENTIALS
       - MONGO_URL=$MONGO_URL
