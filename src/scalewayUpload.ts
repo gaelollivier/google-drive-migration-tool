@@ -12,7 +12,6 @@ const s3 = new S3Client({
   region: process.env['S3_REGION'],
   // endpoint: process.env['S3_ENDPOINT'],
   endpoint: 'https://s3.fr-par.scw.cloud',
-  // bucketEndpoint: true,
   credentials: {
     accessKeyId: process.env['S3_ACCESS_KEY'] ?? '',
     secretAccessKey: process.env['S3_SECRET_KEY'] ?? '',

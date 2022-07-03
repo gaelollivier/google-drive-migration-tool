@@ -29,10 +29,13 @@ import { getDriveClient, getFilePath, getLargestFiles } from './googleDownload';
   );
 
   for (const [index, file] of filteredFiles.entries()) {
+    const sizeInGb = Math.round(
+      Number(file.quotaBytesUsed) / 1024 / 1024 / 1024
+    );
     console.log(
-      `Migrating file ${index + 1}/${filteredFiles.length}, size: ${Math.round(
-        Number(file.quotaBytesUsed) / 1024 / 1024 / 1024
-      )} GB`
+      `Migrating file ${index + 1}/${
+        filteredFiles.length
+      }, size: ${sizeInGb} GB`
     );
     console.log(file);
 
@@ -71,5 +74,18 @@ import { getDriveClient, getFilePath, getLargestFiles } from './googleDownload';
           { $set: { status: 'uploaded' } }
         );
     });
+
+    // Notify Slack webhook
+    const slackWebhook = process.env['SLACK_WEBHOOK_URL'];
+    if (slackWebhook) {
+      const slack = require('@slack/client');
+      const web = new slack.WebClient(slackWebhook);
+      await web.chat.postMessage({
+        channel: process.env['SLACK_CHANNEL'],
+        text: `File ${index + 1}/${
+          filteredFiles.length
+        } uploaded: ${sizeInGb} GB, ${filePath}`,
+      });
+    }
   }
 })();
