@@ -68,7 +68,7 @@ const listAllObjects = async () => {
 // Force the total number of parts to be 500
 // NOTE: Scaleway limits the total number of parts to 1000
 const MAX_PARTS_COUNT = 500;
-const MIN_CHUNK_SIZE = 1024 * 1024;
+const MIN_CHUNK_SIZE = 1024 * 1024 * 6;
 
 export const uploadObject = ({
   filename,

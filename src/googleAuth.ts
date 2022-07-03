@@ -76,7 +76,9 @@ async function getAccessToken(oAuth2Client: Auth.OAuth2Client) {
     access_type: 'offline',
     scope: SCOPES,
   });
-  console.log('Authorize this app by visiting this url:', authUrl);
+  console.log(
+    `Authorize this app by visiting this url: ${authUrl}&prompt=consent`
+  );
 
   const url = new URL(
     await readlineQuestion(
