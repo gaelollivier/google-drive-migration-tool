@@ -1,5 +1,3 @@
-import { WebClient } from '@slack/client';
-
 import { uploadDriveFileToScaleway } from './backupLargeFiles';
 import { runDbQuery } from './db';
 import { getDriveClient, getFilePath, getLargestFiles } from './googleDownload';
@@ -78,17 +76,17 @@ import { getDriveClient, getFilePath, getLargestFiles } from './googleDownload';
     });
 
     // Notify Slack webhook
-    const slackWebhook = process.env['SLACK_WEBHOOK_URL'];
-    const slackChannel = process.env['SLACK_CHANNEL'];
-    if (slackWebhook && slackChannel) {
-      console.log('Notifying Slack');
-      const web = new WebClient(slackWebhook);
-      await web.chat.postMessage({
-        channel: slackChannel,
-        text: `File ${index + 1}/${
-          filteredFiles.length
-        } uploaded: ${sizeInGb} GB, ${filePath}`,
-      });
-    }
+    // const slackWebhook = process.env['SLACK_WEBHOOK_URL'];
+    // const slackChannel = process.env['SLACK_CHANNEL'];
+    // if (slackWebhook && slackChannel) {
+    //   console.log('Notifying Slack');
+    //   const web = new WebClient(slackWebhook);
+    //   await web.chat.postMessage({
+    //     channel: slackChannel,
+    //     text: `File ${index + 1}/${
+    //       filteredFiles.length
+    //     } uploaded: ${sizeInGb} GB, ${filePath}`,
+    //   });
+    // }
   }
 })();
