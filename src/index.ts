@@ -78,6 +78,7 @@ import { getDriveClient, getFilePath, getLargestFiles } from './googleDownload';
     // Notify Slack webhook
     const slackWebhook = process.env['SLACK_WEBHOOK_URL'];
     if (slackWebhook) {
+      console.log('Notifying Slack');
       const slack = require('@slack/client');
       const web = new slack.WebClient(slackWebhook);
       await web.chat.postMessage({

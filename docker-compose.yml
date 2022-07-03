@@ -14,12 +14,4 @@ services:
       - GOOGLE_CREDENTIALS=$GOOGLE_CREDENTIALS
       - GOOGLE_TOKEN=$GOOGLE_TOKEN
       - MONGO_URL=$MONGO_URL
-
-  auth:
-    build: .
-    command: --auth
-    ports:
-      - '3000:3000'
-    environment:
-      - GOOGLE_CREDENTIALS=$GOOGLE_CREDENTIALS
-      - MONGO_URL=$MONGO_URL
+      - SLACK_CHANNEL=$SLACK_CHANNEL
