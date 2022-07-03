@@ -1,27 +1,33 @@
-import AWS from 'aws-sdk';
 import { PassThrough } from 'stream';
 
-const s3 = new AWS.S3({
-  region: process.env['S3_REGION'],
-  endpoint: process.env['S3_ENDPOINT'],
-  s3BucketEndpoint: true,
-});
+import {
+  HeadObjectCommand,
+  ListObjectsV2Command,
+  ListObjectsV2Output,
+  S3Client,
+} from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
 
-// Setup access key
-s3.config.update({
-  accessKeyId: process.env['S3_ACCESS_KEY'],
-  secretAccessKey: process.env['S3_SECRET_KEY'],
+const s3 = new S3Client({
+  region: process.env['S3_REGION'],
+  // endpoint: process.env['S3_ENDPOINT'],
+  endpoint: 'https://s3.fr-par.scw.cloud',
+  // bucketEndpoint: true,
+  credentials: {
+    accessKeyId: process.env['S3_ACCESS_KEY'] ?? '',
+    secretAccessKey: process.env['S3_SECRET_KEY'] ?? '',
+  },
 });
 
 const Bucket = process.env['S3_BUCKET'] ?? '';
 
 export const objectExists = async (filename: string) => {
   try {
-    await s3.headObject({ Bucket, Key: filename }).promise();
+    await s3.send(new HeadObjectCommand({ Bucket, Key: filename }));
 
     return true;
   } catch (err) {
-    if ((err as any).code === 'NotFound') {
+    if ((err as any).name === 'NotFound') {
       return false;
     }
     throw err;
@@ -29,15 +35,15 @@ export const objectExists = async (filename: string) => {
 };
 
 const listAllObjects = async () => {
-  let allObjects: AWS.S3.ObjectList = [];
+  let allObjects: NonNullable<ListObjectsV2Output['Contents']> = [];
 
   async function fetchAllObjects(nextContinuationToken?: string) {
-    const { Contents, ...res } = await s3
-      .listObjectsV2({
+    const { Contents, ...res } = await s3.send(
+      new ListObjectsV2Command({
         Bucket,
         ContinuationToken: nextContinuationToken,
       })
-      .promise();
+    );
 
     allObjects.push(...(Contents ?? []));
 
@@ -85,20 +91,21 @@ export const uploadObject = ({
     )} parts of ${Math.round(partSize / 1024 / 1024)} MB`
   );
 
-  const upload = s3.upload(
-    {
+  const upload = new Upload({
+    client: s3,
+    params: {
       Bucket: process.env['S3_BUCKET'] ?? '',
       Key: filename,
       Body,
       StorageClass: 'GLACIER',
     },
-    { partSize }
-  );
+    partSize,
+  });
 
   let prevLoaded = { size: 0, time: Date.now() };
   // Keep track of last 10 speeds to get a moving avg
   let speeds: number[] = [];
-  upload.on('httpUploadProgress', ({ loaded }) => {
+  upload.on('httpUploadProgress', ({ loaded = 0 }) => {
     const now = Date.now();
     const deltaSize = loaded - prevLoaded.size;
     const deltaTime = now - prevLoaded.time;
@@ -117,14 +124,7 @@ export const uploadObject = ({
 
   return {
     uploadStream: Body,
-    promise: new Promise((resolve, reject) => {
-      upload.send((err, data) => {
-        if (err) {
-          reject(err);
-        }
-        resolve(data);
-      });
-    }),
+    promise: upload.done(),
   };
 };
 
