@@ -3,6 +3,15 @@ import { drive_v3 } from 'googleapis';
 import { getFilePath, getFileStream } from './googleDownload';
 import { objectExists, uploadObject } from './scalewayUpload';
 
+export function getScalewayPath(driveFilePath: string) {
+  const newFilename = `Drive Backup/${driveFilePath}`;
+  return newFilename;
+}
+
+export async function isFileInScaleway(filePath: string) {
+  return objectExists(filePath);
+}
+
 export async function uploadDriveFileToScaleway({
   drive,
   file,
@@ -14,12 +23,12 @@ export async function uploadDriveFileToScaleway({
 }) {
   // Get the file path
   const filePath = await getFilePath({ drive, file });
-  const newFilename = `Drive Backup/${filePath}`;
+  const newFilename = getScalewayPath(filePath);
 
   console.log(logPrefix, 'Checking', newFilename);
 
   // Check if the file is already uploaded
-  const exists = await objectExists(newFilename);
+  const exists = await isFileInScaleway(newFilename);
   if (exists) {
     console.log(logPrefix, 'File already uploaded, skipped');
     return;

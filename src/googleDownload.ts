@@ -95,6 +95,19 @@ export async function getFileStream({
   return fileStream.data;
 }
 
+export async function permanentlyDeleteFile({
+  drive,
+  fileId,
+}: {
+  drive: drive_v3.Drive;
+  fileId: string;
+}) {
+  await drive.files.delete({
+    fileId,
+    supportsAllDrives: false,
+  });
+}
+
 // if (require.main === module) {
 //   (async () => {
 //     // List largest files size

@@ -33,6 +33,10 @@ export const objectExists = async (filename: string) => {
   }
 };
 
+export const getObjectMetadata = async (filename: string) => {
+  return s3.send(new HeadObjectCommand({ Bucket, Key: filename }));
+};
+
 const listAllObjects = async () => {
   let allObjects: NonNullable<ListObjectsV2Output['Contents']> = [];
 

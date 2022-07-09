@@ -1,5 +1,7 @@
 import { createServer } from 'http';
 
+// NOTE: Not used at the moment
+
 // Serve hello world on port 3000
 createServer((req, res) => {
   console.log(req.url);
